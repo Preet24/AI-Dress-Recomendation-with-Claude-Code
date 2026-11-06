@@ -1,0 +1,588 @@
+# Agent eval scenarios (Phase 5). Schema and check semantics: src/outfit/evals/.
+#
+# Each scenario is a short conversation. A turn's `say` is a new message, or the
+# answer when the previous turn asked a question. `expect` lists what must be true
+# after that turn; anything left out is not checked. Metrics every turn gets anyway
+# (critic revisions, template fallbacks, LLM calls, tokens, time) need no expectation.
+#
+# Written against the real wardrobe (10 items, snapshotted for the eval):
+#   tops: black button-up shirt, off-white graphic t-shirt, olive grey button-down
+#         shirt, black sequin top, mauve plaid shirt
+#   bottoms: lavender skirt (flowy), beige trousers (flowy), medium blue jeans
+#   one-piece: blush pink floral midi dress (flowy) · footwear: champagne slingback
+#   heel pumps · no outerwear
+#
+# Weather fixtures: warm_dry (default, ~29 °C feels-like, dry, calm), rainy (~24 °C,
+# 80% rain), cold (~8 °C, dry).
+
+now = 2026-10-17T16:00:00  # a Saturday afternoon
+
+# --- Intake: understanding a new request -----------------------------------------
+
+[[scenarios]]
+id = "party_all_at_once"
+about = "Every detail in one message: no questions, a full recommendation."
+tags = ["intake", "stylist"]
+
+[[scenarios.turns]]
+say = "Party in Pune tonight at 7, about 4 hours, half an hour outside, going by cab"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "party", city = "Pune", start = "19:00", hours_away = 4, hours_outdoors = 0.5, transport = "car" }
+names_top_outfit = true
+
+[[scenarios]]
+id = "party_vague_then_answer"
+about = "A vague request gets one combined question; the answer completes it."
+tags = ["intake", "ask"]
+
+[[scenarios.turns]]
+say = "what should I wear to a party tonight?"
+[scenarios.turns.expect]
+intent = "new"
+asks = true
+missing = ["city", "hours_away", "hours_outdoors", "transport"]
+slots = { occasion = "party", start = "19:00" }
+
+[[scenarios.turns]]
+say = "Pune, 4 hours, maybe half an hour outside, by cab"
+[scenarios.turns.expect]
+asks = false
+slots = { city = "Pune", hours_away = 4, hours_outdoors = 0.5, transport = "car" }
+names_top_outfit = true
+
+[[scenarios]]
+id = "casual_party_misspelt_city_tomorrow"
+about = "A real failure: 'casual' sets formality, 'Banglore' is corrected, 'tomorrow' is not 'now', and the plan is not empty."
+tags = ["intake", "ask", "weather"]
+
+[[scenarios.turns]]
+say = "I have casual party and dinner in Banglore tommorow, mix of outdoor and indoor. It is casual and I will be out for 3 hours and will use a cab"
+[scenarios.turns.expect]
+intent = "new"
+asks = true
+missing = ["hours_outdoors"]
+slots = { occasion = "party", formality = [2, 3], city = "Bangalore", start = "tomorrow 19:00", hours_away = 3, transport = "car" }
+
+[[scenarios.turns]]
+say = "About 2 hours"
+[scenarios.turns.expect]
+asks = false
+slots = { hours_outdoors = 2 }
+names_top_outfit = true
+
+[[scenarios]]
+id = "office_partial_by_scooter"
+about = "Asks only for what is missing; a scooter rules out the flowy office bottoms, and the reply must say why."
+tags = ["intake", "ask", "weather"]
+
+[[scenarios.turns]]
+say = "office tomorrow at 9 in Pune"
+[scenarios.turns.expect]
+intent = "new"
+asks = true
+missing = ["hours_away", "hours_outdoors", "transport"]
+slots = { occasion = "office", city = "Pune", start = "tomorrow 09:00" }
+
+[[scenarios.turns]]
+say = "about 9 hours, 20 minutes outside, by scooter"
+[scenarios.turns.expect]
+asks = false
+slots = { hours_away = 9, hours_outdoors = [0.3, 0.35], transport = "two_wheeler" }
+reply_mentions = ["flowy|wheels|riding|scooter"]
+
+[[scenarios]]
+id = "relative_start_time"
+about = "'In 2 hours' becomes a clock time from now (16:00)."
+tags = ["intake"]
+
+[[scenarios.turns]]
+say = "Meeting friends in Mumbai in 2 hours, casual. Out for 3 hours, about 2 of them outside, walking"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "casual", city = "Mumbai", start = "18:00", hours_away = 3, hours_outdoors = 2, transport = "walk" }
+
+[[scenarios]]
+id = "bicycle_is_bike"
+about = "'Cycling' is a bicycle, not a motorbike."
+tags = ["intake"]
+
+[[scenarios.turns]]
+say = "casual coffee in Pune now, 2 hours, 30 minutes outside, cycling there"
+[scenarios.turns.expect]
+asks = false
+slots = { occasion = "casual", start = "now", transport = "bike" }
+
+[[scenarios]]
+id = "indian_english_bike"
+about = "In Indian English 'my bike' usually means a motorbike."
+tags = ["intake"]
+
+[[scenarios.turns]]
+say = "casual coffee in Pune now, 2 hours, 30 minutes outside, going on my bike"
+[scenarios.turns.expect]
+asks = false
+slots = { transport = "two_wheeler" }
+
+[[scenarios]]
+id = "skip_weather"
+about = "The user doesn't know where or when: plan without weather, no questions."
+tags = ["intake"]
+
+[[scenarios.turns]]
+say = "Suggest a party outfit, I don't know the venue or the timing yet"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "party", skip_weather = true }
+names_top_outfit = true
+
+[[scenarios]]
+id = "interview_is_formal_office"
+about = "An interview is office wear with formality 4-5."
+tags = ["intake"]
+
+[[scenarios.turns]]
+say = "job interview tomorrow at 10 in Bangalore, 3 hours, 10 minutes outside, by cab"
+[scenarios.turns.expect]
+asks = false
+slots = { occasion = "office", formality = [4, 5], city = "Bangalore", start = "tomorrow 10:00", transport = "car" }
+
+[[scenarios]]
+id = "must_include_in_first_message"
+about = "An item named in the request is in every outfit."
+tags = ["intake", "orchestrate"]
+
+[[scenarios.turns]]
+say = "party tonight at 8 in Pune with my black sequin top, 4 hours, 30 minutes outside, cab"
+[scenarios.turns.expect]
+asks = false
+plan_includes = ["sequin"]
+reply_mentions = ["sequin"]
+
+[[scenarios]]
+id = "exclude_an_item"
+about = "An item the user rules out is in no outfit."
+tags = ["intake", "orchestrate"]
+
+[[scenarios.turns]]
+say = "casual day in Pune from now, 3 hours, an hour of it outside, walking, but not the jeans"
+[scenarios.turns.expect]
+asks = false
+plan_excludes = ["jeans"]
+# Not reply_avoids: the reply rightly names the jeans when confirming what "not the
+# jeans" was taken to mean (assumptions must be passed on).
+
+[[scenarios]]
+id = "give_up_after_three_questions"
+about = "Three unhelpful answers: stop asking, assume casual without weather, and say so."
+tags = ["intake", "ask"]
+
+[[scenarios.turns]]
+say = "what should I wear?"
+[scenarios.turns.expect]
+asks = true
+missing = ["occasion"]
+
+[[scenarios.turns]]
+say = "not sure yet"
+[scenarios.turns.expect]
+asks = true
+
+[[scenarios.turns]]
+say = "no idea"
+[scenarios.turns.expect]
+asks = true
+
+[[scenarios.turns]]
+say = "dunno"
+[scenarios.turns.expect]
+asks = false
+slots = { occasion = "casual", skip_weather = true }
+reply_mentions = ["casual", "weather"]
+
+# --- More occasions, places and times (tag "expanded") ----------------------------
+# Weather fixtures geocode any city, so a city here only tests that intake reads it.
+# `now` is Saturday 2026-10-17 16:00: Sunday = 10-18, Monday = 10-19, next Friday = 10-23.
+
+[[scenarios]]
+id = "casual_coffee_date_misspelt_city"
+about = "A coffee date is casual [2, 3]; 'Hydrabad' is corrected; afternoon is 14:00; metro is public transit."
+tags = ["intake", "expanded"]
+
+[[scenarios.turns]]
+say = "coffee date tomorrow afternoon in Hydrabad, nothing fancy, 2 hours, 20 minutes outside, going by metro"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "casual", formality = [2, 3], city = "Hyderabad", start = "tomorrow 14:00", hours_away = 2, hours_outdoors = [0.3, 0.35], transport = "public_transit" }
+names_top_outfit = true
+
+[[scenarios]]
+id = "formal_dinner_date_next_friday"
+about = "A fancy dinner date is party [4, 5] on next Friday's date; the wardrobe has no bottom that dressy, and the reply must say what is missing."
+tags = ["intake", "orchestrate", "expanded"]
+
+[[scenarios.turns]]
+say = "fancy dinner date at a rooftop restaurant in Delhi next Friday at 8:30 pm, about 3 hours, an hour of it on the open terrace, by Uber"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "party", formality = [4, 5], city = "Delhi", start = "2026-10-23 20:30", hours_away = 3, hours_outdoors = 1, transport = "car" }
+reply_mentions = ["bottom|trousers|skirt|dress"]
+
+[[scenarios]]
+id = "parent_teacher_meeting"
+about = "A parent-teacher meeting is neat office wear [3, 3]: no sequins, no graphic tee; 'Monday morning' is 10-19 09:00."
+tags = ["intake", "orchestrate", "expanded"]
+
+[[scenarios.turns]]
+say = "parent-teacher meeting at my son's school on Monday morning in Chennai, about 2 hours, 15 minutes outside, by car"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "office", formality = [3, 3], city = "Chennai", start = "2026-10-19 09:00", hours_away = 2, hours_outdoors = 0.25, transport = "car" }
+plan_excludes = ["sequin", "graphic"]
+names_top_outfit = true
+
+[[scenarios]]
+id = "long_drive_whole_day"
+about = "A long drive is travel; 'the whole day' is about 10 hours; the stops are the outdoor time."
+tags = ["intake", "expanded"]
+
+[[scenarios.turns]]
+say = "long drive from Pune to Lonavala tomorrow morning, out the whole day, mostly in the car with about an hour of stops outside"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "travel", city = ["Lonavala", "Pune"], start = "tomorrow 09:00", hours_away = [8, 12], hours_outdoors = 1, transport = "car" }
+names_top_outfit = true
+
+[[scenarios]]
+id = "sightseeing_sunday_till_evening"
+about = "Sightseeing from 10 am till evening on Sunday: 8 hours, mostly outdoors, on foot."
+tags = ["intake", "weather", "expanded"]
+
+[[scenarios.turns]]
+say = "sightseeing in Kolkata on Sunday from 10 am till evening, walking around, maybe 6 hours of it outdoors"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = ["travel", "casual"], city = "Kolkata", start = "2026-10-18 10:00", hours_away = 8, hours_outdoors = 6, transport = "walk" }
+names_top_outfit = true
+
+[[scenarios]]
+id = "brunch_day_after_tomorrow_abroad"
+about = "Brunch is casual at 12:00; 'day after tomorrow' is 10-19; the tube is public transit; a city abroad is fine."
+tags = ["intake", "expanded"]
+
+[[scenarios.turns]]
+say = "brunch with friends in London day after tomorrow, 3 hours, half an hour outside, taking the tube"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "casual", city = "London", start = "2026-10-19 12:00", hours_away = 3, hours_outdoors = 0.5, transport = "public_transit" }
+
+[[scenarios]]
+id = "late_night_club_by_scooty"
+about = "Clubbing at 10:30 pm on a scooty: party, 22:30, two-wheeler, so nothing flowy."
+tags = ["intake", "weather", "expanded"]
+
+[[scenarios.turns]]
+say = "clubbing in Goa tonight from 10:30 pm, 4 hours, mostly inside, maybe 20 minutes outside, going on my scooty"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "party", city = "Goa", start = "22:30", hours_away = 4, hours_outdoors = [0.3, 0.35], transport = "two_wheeler" }
+plan_excludes = ["skirt", "dress", "trousers"]
+
+[[scenarios]]
+id = "meeting_in_45_minutes_by_auto"
+about = "'In 45 minutes' is 16:45; an auto-rickshaw counts as a car; ten minutes is about 0.17 h."
+tags = ["intake", "expanded"]
+
+[[scenarios.turns]]
+say = "client meeting in Noida in 45 minutes, 5 hours, 10 minutes outside, by auto"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "office", city = "Noida", start = "16:45", hours_away = 5, hours_outdoors = [0.15, 0.2], transport = "car" }
+
+[[scenarios]]
+id = "long_day_out_asked_then_answered"
+about = "A vague long day out gets one question; the answer fills in a whole day by local train."
+tags = ["intake", "ask", "expanded"]
+
+[[scenarios.turns]]
+say = "planning a long day out tomorrow, what should I wear?"
+[scenarios.turns.expect]
+intent = "new"
+asks = true
+missing = ["city", "transport"]
+slots = { occasion = ["casual", "travel"] }
+
+[[scenarios.turns]]
+say = "Mumbai, leaving at 11, all day, about 4 hours outside, by local train"
+[scenarios.turns.expect]
+asks = false
+slots = { city = "Mumbai", start = "tomorrow 11:00", hours_away = [8, 12], hours_outdoors = 4, transport = "public_transit" }
+names_top_outfit = true
+
+# --- Router: new request vs follow-up vs chat ------------------------------------
+
+[[scenarios]]
+id = "same_city_back_reference"
+about = "A second request reuses the city only because the user says 'same city'."
+tags = ["router", "intake"]
+
+[[scenarios.turns]]
+say = "Party in Pune tonight at 7, about 4 hours, half an hour outside, going by cab"
+
+[[scenarios.turns]]
+say = "what about the office on Monday at 9? same city, 9 hours, 15 minutes outside, by cab"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "office", city = "Pune", start = "2026-10-19 09:00", hours_away = 9, hours_outdoors = 0.25, transport = "car" }
+names_top_outfit = true
+
+[[scenarios]]
+id = "new_request_replaces_old"
+about = "Switching to a wedding is a new request, not a tweak of the party."
+tags = ["router", "intake"]
+
+[[scenarios.turns]]
+say = "Party in Pune tonight at 7, about 4 hours, half an hour outside, going by cab"
+
+[[scenarios.turns]]
+say = "Actually, what about a wedding tomorrow evening? Same city, 5 hours, an hour outside, by car"
+[scenarios.turns.expect]
+intent = "new"
+asks = false
+slots = { occasion = "wedding", city = "Pune", start = "tomorrow 18:00", hours_away = 5, hours_outdoors = 1, transport = "car" }
+
+[[scenarios]]
+id = "thanks_after_plan"
+about = "Thanks is chat: the router answers, the plan is kept."
+tags = ["router", "chat"]
+
+[[scenarios.turns]]
+say = "Party in Pune tonight at 7, about 4 hours, half an hour outside, going by cab"
+
+[[scenarios.turns]]
+say = "thanks, that's perfect!"
+[scenarios.turns.expect]
+intent = "chat"
+asks = false
+slots = { occasion = "party" }
+
+[[scenarios]]
+id = "greeting_first"
+about = "A greeting before any request is chat, not a request to fill."
+tags = ["router", "chat"]
+
+[[scenarios.turns]]
+say = "hi! what can you do?"
+[scenarios.turns.expect]
+intent = "chat"
+asks = false
+
+# --- Refine: follow-ups through the ReAct loop -----------------------------------
+
+[[scenarios]]
+id = "swap_to_jeans"
+about = "A requested swap: find the jeans, re-plan with them, pass on the warning that they are casual."
+tags = ["refine"]
+
+[[scenarios.turns]]
+say = "Party in Pune tonight at 7, about 4 hours, half an hour outside, going by cab"
+
+[[scenarios.turns]]
+say = "something with my blue jeans instead"
+[scenarios.turns.expect]
+intent = "follow_up"
+tools = ["update_request"]
+plan_includes = ["jeans"]
+# The warning (not party wear, formality 2, warmth 3) may be put in several ways.
+reply_mentions = ["jeans", "casual|warm|warmer|dressy|formal|relaxed"]
+
+[[scenarios]]
+id = "show_my_tops"
+about = "'Show me' puts the items in front of the user."
+tags = ["refine"]
+
+[[scenarios.turns]]
+say = "casual day in Pune from now, 3 hours, an hour of it outside, walking"
+
+[[scenarios.turns]]
+say = "show me all my tops"
+[scenarios.turns.expect]
+intent = "follow_up"
+tools = ["show_items"]
+found_min = 4
+reply_mentions = ["sequin", "plaid"]
+
+[[scenarios]]
+id = "item_not_in_wardrobe"
+about = "Asking for something the user doesn't own: search, then say it isn't there."
+tags = ["refine"]
+
+[[scenarios.turns]]
+say = "Party in Pune tonight at 7, about 4 hours, half an hour outside, going by cab"
+
+[[scenarios.turns]]
+say = "can I wear my red saree instead?"
+[scenarios.turns.expect]
+intent = "follow_up"
+tools = ["search_wardrobe"]
+reply_mentions = ["saree"]
+
+[[scenarios]]
+id = "less_formal"
+about = "'More relaxed' changes the request and re-plans."
+tags = ["refine"]
+
+[[scenarios.turns]]
+say = "Party in Pune tonight at 7, about 4 hours, half an hour outside, going by cab"
+
+[[scenarios.turns]]
+say = "something a bit more relaxed please"
+[scenarios.turns.expect]
+intent = "follow_up"
+tools = ["update_request"]
+
+# --- Weather reaching the reply ----------------------------------------------------
+
+[[scenarios]]
+id = "rain_on_a_scooter"
+about = "Rain while riding: no flowy pieces, a rain layer the wardrobe lacks, and the reply says both."
+tags = ["weather", "critic"]
+weather = "rainy"
+
+[[scenarios.turns]]
+say = "casual hangout in Pune at 5pm, 3 hours, 1 hour outside, by scooter"
+[scenarios.turns.expect]
+asks = false
+plan_excludes = ["skirt", "dress", "trousers"]
+reply_mentions = ["rain", "jacket|outerwear|layer|coat"]
+
+[[scenarios]]
+id = "cold_without_outerwear"
+about = "A cold evening outside needs outerwear the wardrobe doesn't have; the reply must say so."
+tags = ["weather", "critic"]
+weather = "cold"
+
+[[scenarios.turns]]
+say = "casual walk around Pune at 6pm, 2 hours, all of it outside, on foot"
+[scenarios.turns.expect]
+asks = false
+reply_mentions = ["jacket|outerwear|layer|coat|sweater"]
+
+
+# --- The profile: saved places and the home city (tag "profile") -----------------
+
+[[scenarios]]
+id = "office_tomorrow_confirmed"
+about = "'Office tomorrow' with a saved Office: dress code and usual start at once, the usual trip after a yes, home city as the city."
+tags = ["profile", "intake", "ask"]
+
+[scenarios.profile]
+home_city = "Pune"
+places = [{ name = "Office", occasion = "office", dress_code = "business_casual", start = 09:00:00, hours_away = 9, hours_outdoors = 0.25, transport = "car" }]
+
+[[scenarios.turns]]
+say = "what should I wear to office tomorrow?"
+[scenarios.turns.expect]
+intent = "new"
+asks = true
+missing = ["saved_trip"]
+slots = { place = "Office", occasion = "office", formality = [3, 4], city = "Pune", start = "tomorrow 09:00" }
+
+[[scenarios.turns]]
+say = "yes"
+[scenarios.turns.expect]
+asks = false
+slots = { use_saved_trip = true, hours_away = 9, hours_outdoors = 0.25, transport = "car" }
+names_top_outfit = true
+
+[[scenarios]]
+id = "office_tomorrow_with_changes"
+about = "'Yes, but ...' keeps the changes and takes the rest of the usual trip."
+tags = ["profile", "intake", "ask"]
+
+[scenarios.profile]
+home_city = "Pune"
+places = [{ name = "Office", occasion = "office", dress_code = "business_casual", start = 09:00:00, hours_away = 9, hours_outdoors = 0.25, transport = "car" }]
+
+[[scenarios.turns]]
+say = "office tomorrow"
+[scenarios.turns.expect]
+asks = true
+missing = ["saved_trip"]
+
+[[scenarios.turns]]
+say = "yes, but I'll ride my scooty and stay 11 hours"
+[scenarios.turns.expect]
+asks = false
+slots = { hours_away = 11, hours_outdoors = 0.25, transport = "two_wheeler", start = "tomorrow 09:00" }
+
+[[scenarios]]
+id = "office_not_as_usual"
+about = "'No' to the usual trip falls back to the normal questions."
+tags = ["profile", "intake", "ask"]
+
+[scenarios.profile]
+home_city = "Pune"
+places = [{ name = "Office", occasion = "office", dress_code = "business_casual", start = 09:00:00, hours_away = 9, hours_outdoors = 0.25, transport = "car" }]
+
+[[scenarios.turns]]
+say = "office tomorrow"
+[scenarios.turns.expect]
+asks = true
+missing = ["saved_trip"]
+
+[[scenarios.turns]]
+say = "no, different today"
+[scenarios.turns.expect]
+asks = true
+missing = ["hours_away", "hours_outdoors", "transport"]
+slots = { use_saved_trip = false, formality = [3, 4] }
+
+[[scenarios]]
+id = "gym_with_part_of_a_trip"
+about = "A saved Gym with only a transport: one question confirms it and asks for the rest."
+tags = ["profile", "intake", "ask"]
+
+[scenarios.profile]
+home_city = "Pune"
+places = [{ name = "Gym", occasion = "sports", transport = "two_wheeler" }]
+
+[[scenarios.turns]]
+say = "heading to my gym at 7 tomorrow morning"
+[scenarios.turns.expect]
+asks = true
+missing = ["saved_trip", "hours_away", "hours_outdoors"]
+slots = { place = "Gym", occasion = "sports", start = "tomorrow 07:00" }
+
+[[scenarios.turns]]
+say = "yes, about an hour and a half, all indoors"
+[scenarios.turns.expect]
+asks = false
+slots = { hours_away = 1.5, hours_outdoors = [0, 0.3], transport = "two_wheeler" }
+
+[[scenarios]]
+id = "home_city_by_default"
+about = "No city in the message: the home city, with no question about it."
+tags = ["profile", "intake"]
+
+[scenarios.profile]
+home_city = "Bangalore"
+
+[[scenarios.turns]]
+say = "casual lunch with friends at 1pm, 2 hours, 15 minutes walking outside, by metro"
+[scenarios.turns.expect]
+asks = false
+slots = { occasion = "casual", city = "Bangalore", start = "13:00", transport = "public_transit" }
+names_top_outfit = true

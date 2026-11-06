@@ -1,0 +1,48 @@
+# Staples "What should I buy?" tries against the wardrobe (tools/staples.py).
+# colors: names from staples.COLORS, most usual first. formality / warmth: 1-5 as in
+# ClothingItem. gender: "man" or "woman" leaves it out for the other; unset = everyone.
+# Optional: length (default full), fit (regular), flowy (false).
+
+staple = [
+  # tops
+  { category = "top", subtype = "t-shirt", colors = ["white", "black", "grey", "navy", "beige"], fabric = "cotton", formality = 1, warmth = 1, occasions = ["casual", "travel", "lounge"] },
+  { category = "top", subtype = "linen shirt", colors = ["white", "light blue", "beige"], fabric = "linen", formality = 2, warmth = 1, occasions = ["casual", "travel"] },
+  { category = "top", subtype = "oxford shirt", colors = ["white", "light blue"], fabric = "cotton", formality = 3, warmth = 2, occasions = ["office", "formal", "casual"] },
+  { category = "top", subtype = "dress shirt", colors = ["white", "light blue", "black"], fabric = "cotton", formality = 4, warmth = 2, occasions = ["office", "formal", "party", "wedding"] },
+  { category = "top", subtype = "polo shirt", colors = ["navy", "white", "black", "olive"], fabric = "cotton", formality = 2, warmth = 1, occasions = ["casual", "travel", "office"], gender = "man" },
+  { category = "top", subtype = "sweater", colors = ["grey", "navy", "beige", "maroon"], fabric = "wool", formality = 3, warmth = 4, occasions = ["casual", "office"] },
+  { category = "top", subtype = "blouse", colors = ["white", "black", "beige"], fabric = "synthetic", formality = 3, warmth = 1, occasions = ["office", "formal", "party"], gender = "woman" },
+  { category = "top", subtype = "sports tee", colors = ["black", "grey", "navy"], fabric = "synthetic", formality = 1, warmth = 1, occasions = ["sports"] },
+  # bottoms
+  { category = "bottom", subtype = "jeans", colors = ["blue", "black"], fabric = "denim", formality = 2, warmth = 3, occasions = ["casual", "travel", "party"] },
+  { category = "bottom", subtype = "chinos", colors = ["beige", "navy", "olive", "grey"], fabric = "cotton", formality = 2, warmth = 2, occasions = ["casual", "travel", "office"] },
+  { category = "bottom", subtype = "trousers", colors = ["black", "grey", "navy"], fabric = "synthetic", formality = 4, warmth = 2, occasions = ["office", "formal", "party", "wedding"] },
+  { category = "bottom", subtype = "shorts", colors = ["beige", "navy", "olive"], fabric = "cotton", formality = 1, warmth = 1, occasions = ["casual", "travel", "lounge"], length = "short" },
+  { category = "bottom", subtype = "track pants", colors = ["black", "grey", "navy"], fabric = "synthetic", formality = 1, warmth = 2, occasions = ["sports", "lounge"] },
+  { category = "bottom", subtype = "midi skirt", colors = ["black", "beige", "navy"], fabric = "synthetic", formality = 3, warmth = 2, occasions = ["office", "party", "casual"], length = "midi", flowy = true, gender = "woman" },
+  # one-pieces
+  { category = "one_piece", subtype = "midi dress", colors = ["black", "navy", "maroon"], fabric = "synthetic", formality = 4, warmth = 2, occasions = ["party", "formal", "wedding"], length = "midi", flowy = true, gender = "woman" },
+  { category = "one_piece", subtype = "shirt dress", colors = ["beige", "light blue", "olive"], fabric = "cotton", formality = 2, warmth = 1, occasions = ["casual", "travel", "office"], length = "knee", gender = "woman" },
+  # ethnic wear
+  { category = "ethnic_top", subtype = "kurta", colors = ["white", "maroon", "navy", "beige"], fabric = "cotton", formality = 3, warmth = 2, occasions = ["indian_festive", "casual", "wedding"] },
+  { category = "ethnic_bottom", subtype = "churidar", colors = ["white", "beige", "black"], fabric = "cotton", formality = 3, warmth = 2, occasions = ["indian_festive", "wedding"] },
+  # outerwear
+  { category = "outerwear", subtype = "blazer", colors = ["navy", "black", "grey", "beige"], fabric = "wool", formality = 4, warmth = 3, occasions = ["office", "formal", "party", "wedding"] },
+  { category = "outerwear", subtype = "rain jacket", colors = ["navy", "black", "olive"], fabric = "synthetic", formality = 2, warmth = 2, occasions = ["casual", "travel", "office"] },
+  { category = "outerwear", subtype = "light jacket", colors = ["navy", "olive", "black", "beige"], fabric = "cotton", formality = 2, warmth = 3, occasions = ["casual", "travel", "party"] },
+  { category = "outerwear", subtype = "wool coat", colors = ["black", "grey", "navy", "tan"], fabric = "wool", formality = 4, warmth = 5, occasions = ["office", "formal", "casual", "party"] },
+  # footwear
+  { category = "footwear", subtype = "sneakers", colors = ["white", "black", "grey"], fabric = "leather", formality = 2, warmth = 2, occasions = ["casual", "travel", "party"] },
+  { category = "footwear", subtype = "running shoes", colors = ["black", "grey", "navy"], fabric = "synthetic", formality = 1, warmth = 2, occasions = ["sports", "travel"] },
+  { category = "footwear", subtype = "loafers", colors = ["brown", "black", "tan"], fabric = "leather", formality = 3, warmth = 2, occasions = ["office", "casual", "party"] },
+  { category = "footwear", subtype = "oxford shoes", colors = ["black", "brown"], fabric = "leather", formality = 5, warmth = 2, occasions = ["office", "formal", "wedding", "party"], gender = "man" },
+  { category = "footwear", subtype = "pumps", colors = ["black", "beige"], fabric = "leather", formality = 4, warmth = 1, occasions = ["office", "formal", "party", "wedding"], gender = "woman" },
+  { category = "footwear", subtype = "ballet flats", colors = ["black", "beige", "tan"], fabric = "leather", formality = 3, warmth = 1, occasions = ["office", "casual", "party"], gender = "woman" },
+  { category = "footwear", subtype = "sandals", colors = ["brown", "tan", "black"], fabric = "leather", formality = 2, warmth = 1, occasions = ["casual", "travel", "indian_festive"] },
+  { category = "footwear", subtype = "juttis", colors = ["tan", "maroon", "black"], fabric = "leather", formality = 3, warmth = 1, occasions = ["indian_festive", "wedding"] },
+  # accessories: only those that can fill a gap (tools/accessories.missing); a belt, bag
+  # or watch never does, so it could never be suggested
+  { category = "accessory", subtype = "sunglasses", colors = ["black", "brown"], fabric = "synthetic", formality = 2, warmth = 1, occasions = ["casual", "travel", "sports", "office", "party"] },
+  { category = "accessory", subtype = "wool scarf", colors = ["grey", "navy", "maroon", "beige"], fabric = "wool", formality = 3, warmth = 3, occasions = ["casual", "office", "travel", "party", "formal"] },
+  { category = "accessory", subtype = "silk tie", colors = ["navy", "maroon", "black"], fabric = "silk", formality = 4, warmth = 1, occasions = ["office", "formal", "party", "wedding"], gender = "man" },
+]

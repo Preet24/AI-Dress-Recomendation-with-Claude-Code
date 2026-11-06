@@ -1,0 +1,28 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Everything the app stores about its user: photos, cutouts, profile, wear log, chats,
+# eval runs, the vector index
+data/
+qdrant_data/
+
+# Personal photos and screenshots
+New Personal Image/
+test images/
+/*.png
+*.jpg
+*.jpeg
+*.heic
+*.webp
+
+# Local Claude Code settings
+CLAUDE.local.md
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/

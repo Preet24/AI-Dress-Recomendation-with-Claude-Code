@@ -1,0 +1,5 @@
+# ripgrep (Claude Code's Grep/Glob) always honours this file, even outside a git repo,
+# so project-wide searches never read secrets.
+.env
+.env.*
+!.env.example

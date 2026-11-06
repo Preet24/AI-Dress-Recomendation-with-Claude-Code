@@ -1,0 +1,38 @@
+# Exact versions the project was tested with (Python 3.12, Windows, CPU only).
+# pyproject.toml holds the looser ranges; `pip install -e ".[api,ui,dev]"` installs from it.
+#
+# torch is intentionally not listed. open_clip_torch needs it, so install a torch build
+# first (the CPU build is enough; this project was tested with 2.7.0). Installing this
+# file never replaces an existing torch.
+#
+#   pip install -r requirements.txt
+#   pip install -e . --no-deps
+
+# Core
+langgraph==1.2.11
+numpy==2.4.4
+onnxruntime==1.28.0
+open_clip_torch==3.3.0
+openai==3.6.0
+pillow==12.2.0
+pydantic==2.13.3
+pydantic-settings==2.15.0
+qdrant-client==1.19.1
+rembg==2.0.85
+scikit-image==0.26.0
+scikit-learn==1.8.0
+scipy==1.17.1
+tzdata==2026.2; sys_platform == "win32"
+
+# API
+fastapi==0.141.1
+uvicorn==0.52.3
+python-multipart==0.0.32
+
+# UI
+streamlit==1.56.0
+httpx==0.28.1
+
+# Tests and lint
+pytest==9.1.1
+ruff==0.17.0
